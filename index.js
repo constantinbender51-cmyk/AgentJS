@@ -4,20 +4,18 @@ const axios = require('axios');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // --- CONFIGURATION & VALIDATION ---
-console.log("Server starting up..."); // First log message
+console.log("Server starting up with @google/generative-ai SDK...");
 
-const GEMINI_API_KEY = process.env.GOOGLE_API_KEY;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const NTFY_TOPIC_URL = process.env.NTFY_TOPIC_URL;
 const PORT = process.env.PORT || 3000;
 
-// This is the new, important part.
 if (!GEMINI_API_KEY) {
-  console.error("FATAL ERROR: GOOGLE_API_KEY environment variable is not set.");
-  // We exit here so the server doesn't even try to start without the key.
+  console.error("FATAL ERROR: GEMINI_API_KEY environment variable is not set.");
   process.exit(1); 
 }
 
-console.log("Found GOOGLE_API_KEY. NTFY_TOPIC_URL is set to:", NTFY_TOPIC_URL || "Not Set");
+console.log("Found GEMINI_API_KEY. NTFY_TOPIC_URL is set to:", NTFY_TOPIC_URL || "Not Set");
 
 // --- INITIALIZATION ---
 const app = express();
@@ -50,7 +48,7 @@ const tools = {
 
 // --- GEMINI MODEL CONFIGURATION ---
 const model = genAI.getGenerativeModel({
-  model: "gemini-1.5-flash",
+  model: "gemini-2.5-flash", // Using the model name you have confirmed.
   tools: {
     functionDeclarations: [
       {
