@@ -1,0 +1,22 @@
+{
+  "name": "agent-js",
+  "version": "1.0.0",
+  "description": "A Gemini agent with function calling, deployed on Railway.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [
+    "ai",
+    "gemini",
+    "agent",
+    "railway"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google/generative-ai": "^0.7.1",
+    "axios": "^1.6.8",
+    "express": "^4.19.2"
+  }
+}
