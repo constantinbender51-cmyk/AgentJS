@@ -3,29 +3,35 @@ const path = require('path');
 const axios = require('axios');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-// --- CONFIGURATION ---
-// Load environment variables from Railway's dashboard
+// --- CONFIGURATION & VALIDATION ---
+console.log("Server starting up..."); // First log message
+
 const GEMINI_API_KEY = process.env.GOOGLE_API_KEY;
 const NTFY_TOPIC_URL = process.env.NTFY_TOPIC_URL;
 const PORT = process.env.PORT || 3000;
+
+// This is the new, important part.
+if (!GEMINI_API_KEY) {
+  console.error("FATAL ERROR: GOOGLE_API_KEY environment variable is not set.");
+  // We exit here so the server doesn't even try to start without the key.
+  process.exit(1); 
+}
+
+console.log("Found GOOGLE_API_KEY. NTFY_TOPIC_URL is set to:", NTFY_TOPIC_URL || "Not Set");
 
 // --- INITIALIZATION ---
 const app = express();
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 // --- MIDDLEWARE ---
-// Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
-// Parse JSON bodies for API requests
 app.use(express.json());
 
 // --- AI TOOLS (THE AGENT'S ABILITIES) ---
 const tools = {
-  // Tool to get the current time
   getCurrentTime: () => {
     return new Date().toUTCString();
   },
-  // Tool to send a notification via ntfy
   sendNotification: async ({ message }) => {
     if (!NTFY_TOPIC_URL) {
       return "Error: NTFY_TOPIC_URL is not configured.";
@@ -44,7 +50,7 @@ const tools = {
 
 // --- GEMINI MODEL CONFIGURATION ---
 const model = genAI.getGenerativeModel({
-  model: "gemini-1.5-flash", // Or another suitable model
+  model: "gemini-1.5-flash",
   tools: {
     functionDeclarations: [
       {
@@ -86,14 +92,11 @@ app.post('/chat', async (req, res) => {
     const functionCalls = response.functionCalls;
 
     if (functionCalls && functionCalls.length > 0) {
-      // --- Handle Function Calling ---
-      const call = functionCalls[0]; // Handle one function call at a time for simplicity
+      const call = functionCalls[0];
       const functionToCall = tools[call.name];
 
       if (functionToCall) {
         const functionResult = await functionToCall(call.args);
-
-        // Send the result back to the model
         const followUpResult = await chat.sendMessage([
           {
             functionResponse: {
@@ -104,14 +107,11 @@ app.post('/chat', async (req, res) => {
             },
           },
         ]);
-        
-        // Send the model's final text response to the user
         res.json({ message: followUpResult.response.text() });
       } else {
         res.status(500).json({ error: `Unknown function call: ${call.name}` });
       }
     } else {
-      // --- Handle Regular Text Response ---
       res.json({ message: response.text() });
     }
   } catch (error) {
