@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgentJS Chat</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="chat-container">
+        <div id="chat-header">
+            <h2>AgentJS</h2>
+            <span>Your AI Companion</span>
+        </div>
+        <div id="chat-window">
+            <!-- Messages will be added here by JavaScript -->
+            <div class="message ai-message">
+                <p>Hello! I'm your personal AI agent. You can ask me questions or give me commands. Try asking 'What time is it?' or 'Send a notification saying hello'.</p>
+            </div>
+        </div>
+        <form id="chat-form">
+            <input type="text" id="message-input" placeholder="Type your message..." autocomplete="off" required>
+            <button type="submit">Send</button>
+        </form>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
