@@ -1,67 +1,74 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOM loaded. Script starting."); // Log 1
-
+    // We assume the script starts correctly if the page loads.
     const chatForm = document.getElementById('chat-form');
     const messageInput = document.getElementById('message-input');
     const chatWindow = document.getElementById('chat-window');
 
-    let conversationHistory = [
-        { role: "user", parts: [{ text: "You are AgentJS, a helpful and friendly AI assistant with access to tools. Keep your responses concise and conversational." }] },
-        { role: "model", parts: [{ text: "Understood! I'm AgentJS. I'm ready to help." }] }
-    ];
-
+    // This is our function to add any message to the screen, including errors.
     const addMessage = (sender, text) => {
-        const messageElement = document.createElement('div');
-        messageElement.classList.add('message', `${sender}-message`);
-        const paragraph = document.createElement('p');
-        paragraph.textContent = text;
-        messageElement.appendChild(paragraph);
-        chatWindow.appendChild(messageElement);
-        chatWindow.scrollTop = chatWindow.scrollHeight;
-        return messageElement;
+        try {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', `${sender}-message`);
+            const paragraph = document.createElement('p');
+            paragraph.textContent = text;
+            messageElement.appendChild(paragraph);
+            chatWindow.appendChild(messageElement);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+            return messageElement;
+        } catch (e) {
+            // If even adding a message fails, we are in deep trouble.
+            // This is a last resort alert.
+            alert("A critical error occurred while trying to display a message. Error: " + e.message);
+        }
     };
 
-    chatForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        console.log("Form submitted."); // Log 2
+    // We wrap the entire logic in a try...catch block.
+    try {
+        let conversationHistory = [
+            { role: "user", parts: [{ text: "You are AgentJS, a helpful and friendly AI assistant with access to tools. Keep your responses concise and conversational." }] },
+            { role: "model", parts: [{ text: "Understood! I'm AgentJS. I'm ready to help." }] }
+        ];
 
-        const userMessage = messageInput.value.trim();
-        if (!userMessage) return;
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userMessage = messageInput.value.trim();
+            if (!userMessage) return;
 
-        console.log("User message:", userMessage); // Log 3
-        addMessage('user', userMessage);
-        conversationHistory.push({ role: 'user', parts: [{ text: userMessage }] });
+            addMessage('user', userMessage);
+            conversationHistory.push({ role: 'user', parts: [{ text: userMessage }] });
+            messageInput.value = '';
+            
+            const loadingElement = addMessage('ai loading', 'Thinking...');
 
-        messageInput.value = '';
-        console.log("Displaying 'Thinking...' message."); // Log 4
-        const loadingElement = addMessage('ai loading', 'Thinking');
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ history: conversationHistory }),
+                });
 
-        try {
-            console.log("Sending fetch request to /chat..."); // Log 5
-            const response = await fetch('/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ history: conversationHistory }),
-            });
+                loadingElement.remove();
 
-            console.log("Fetch response received."); // Log 6
-            loadingElement.remove();
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`Server Error: ${response.status} - ${errorData.error || 'Unknown'}`);
+                }
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'An unknown error occurred.');
+                const data = await response.json();
+                const aiMessage = data.message;
+
+                addMessage('ai', aiMessage);
+                conversationHistory.push({ role: 'model', parts: [{ text: aiMessage }] });
+
+            } catch (fetchError) {
+                // If the fetch fails, display the error on screen.
+                loadingElement.remove();
+                addMessage('ai error', `Error communicating with server: ${fetchError.message}`);
             }
+        });
 
-            const data = await response.json();
-            const aiMessage = data.message;
-
-            addMessage('ai', aiMessage);
-            conversationHistory.push({ role: 'model', parts: [{ text: aiMessage }] });
-
-        } catch (error) {
-            console.error('Fetch failed:', error); // Log 7 (Error)
-            loadingElement.remove();
-            addMessage('ai error', `Sorry, a client-side error occurred: ${error.message}`);
-        }
-    });
+    } catch (initializationError) {
+        // If the initial setup fails, display the error on screen.
+        addMessage('ai error', `A critical error occurred on startup: ${initializationError.message}`);
+    }
 });
